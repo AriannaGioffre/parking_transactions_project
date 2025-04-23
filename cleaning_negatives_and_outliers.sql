@@ -1,9 +1,9 @@
 -- The first CTE is to swap the start_time and end_time when the duration is negative
 
-WITH transfo AS (
+WITH transformation AS (
   SELECT  
-    ID AS id,  
-    Source AS source, 
+    parking_tr.ID AS id,  
+    parking_tr.Source AS `source`, 
     DurationinMinutes,
     -- Casting the start and end time to Date time for Date_diff later
     CAST(
@@ -22,14 +22,21 @@ WITH transfo AS (
    , AppZoneID AS app_zone_id
    , AppZoneGroup AS app_zone_group
    , PaymentMethod AS payment_method
-   , LocationGroup AS location_group
+   -- Adding the CASE to remove null values from location_group
+   , CASE
+        WHEN AppZoneID = 101.0 THEN 'Unknown Location'
+        WHEN AppZoneGroup = 'SoCo PTMD'  THEN 'South Congress'
+        WHEN AppZoneGroup = 'Woods of Westlake'  THEN 'Woods of Westlake'
+        WHEN AppZoneGroup = 'PARD (Parking Lots)' THEN "Dawson's Lot"
+        ELSE LocationGroup
+      END AS location_group
    , FORMAT_TIMESTAMP('%F %T', LastUpdated) AS last_updated
-  FROM `parking-transactions.main.parking_transactions`
+  FROM `parking-transactions.main.parking_transactions` AS parking_tr
 )
 SELECT
   id,
   source,
-  -- Date_diff to only have positive values
+  -- Performing date_diff to only have positive values
   DATE_DIFF(end_time, start_time, MINUTE) AS duration_minutes,
   -- formatting the date_time to remove the T in the original values
   FORMAT_DATETIME('%F %T',DATETIME(start_time)) AS start_time,
@@ -41,7 +48,7 @@ SELECT
   payment_method, 
   location_group, 
   last_updated
-FROM transfo
--- Filtering for values under 600 minutes. There is a difference of + 759 entries compared to expected outcome, not sure where it's coming from
+FROM transformation
+-- Filtering out the values above 600 minutes
 WHERE DATE_DIFF(end_time, start_time, MINUTE) <= 600
 ORDER BY transfo.id
