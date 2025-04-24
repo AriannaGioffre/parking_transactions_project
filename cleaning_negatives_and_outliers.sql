@@ -49,6 +49,6 @@ SELECT
   location_group, 
   last_updated
 FROM transformation
--- Filtering out the values above 600 minutes
-WHERE DATE_DIFF(end_time, start_time, MINUTE) <= 600
+-- Filtering out the values above 4315 minutes. Parking for 3 days is a possibility we should include. Outliers (more than 3 days) are excluded. 
+WHERE DATE_DIFF(end_time, start_time, MINUTE) <= 4315
 ORDER BY transfo.id
